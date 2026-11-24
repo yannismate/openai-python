@@ -1,4 +1,5 @@
+from .azure import azure as azure
 from .vertex import vertex as vertex
 from .bedrock import bedrock as bedrock
 
-__all__ = ["bedrock", "vertex"]
+__all__ = ["azure", "bedrock", "vertex"]

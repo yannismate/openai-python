@@ -4,6 +4,7 @@ import asyncio
 from azure.identity.aio import DefaultAzureCredential, get_bearer_token_provider
 
 from openai import AsyncOpenAI
+from openai.providers import azure
 
 # Azure OpenAI Realtime Docs
 
@@ -22,7 +23,6 @@ async def main() -> None:
 
     async with DefaultAzureCredential() as credential:
         token_provider = get_bearer_token_provider(credential, "https://cognitiveservices.azure.com/.default")
-        token = await token_provider()
 
         # The endpoint of your Azure OpenAI resource is required. You can set it in the AZURE_OPENAI_ENDPOINT
         # environment variable.
@@ -30,19 +30,10 @@ async def main() -> None:
         # Example: https://{your-resource}.openai.azure.com
         endpoint = os.environ["AZURE_OPENAI_ENDPOINT"]
 
-        # The deployment name of the model you want to use is required. You can set it in the AZURE_OPENAI_DEPLOYMENT_NAME
-        # environment variable.
-        # You can find it in the Foundry portal in the "Models + endpoints" page of your Azure OpenAI resource.
-        # Example: gpt-realtime
-        deployment_name = os.environ["AZURE_OPENAI_DEPLOYMENT_NAME"]
+        deployment_name = "your-deployment-name"
 
-        base_url = endpoint.replace("https://", "wss://").rstrip("/") + "/openai/v1"
-
-        # The APIs are compatible with the OpenAI client library.
-        # You can use the OpenAI client library to access the Azure OpenAI APIs.
-        # Make sure to set the baseURL and apiKey to use the Azure OpenAI endpoint and token.
         async with (
-            AsyncOpenAI(websocket_base_url=base_url, api_key=token) as client,
+            AsyncOpenAI(provider=azure(endpoint=endpoint, token_provider=token_provider)) as client,
             client.realtime.connect(model=deployment_name) as connection,
         ):
             await connection.session.update(

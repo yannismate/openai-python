@@ -1114,45 +1114,27 @@ asyncio.run(main())
 
 ## Microsoft Azure OpenAI
 
-To use this library with [Azure OpenAI](https://learn.microsoft.com/azure/ai-services/openai/overview), use the `AzureOpenAI`
-class instead of the `OpenAI` class.
-
-> [!IMPORTANT]
-> The Azure API shape differs from the core API shape which means that the static types for responses / params
-> won't always be correct.
+To use this library with [Azure OpenAI](https://learn.microsoft.com/azure/ai-services/openai/overview), configure the standard client with the Azure provider.
 
 ```py
-from openai import AzureOpenAI
+from openai import OpenAI
+from openai.providers import azure
 
-# gets the API Key from environment variable AZURE_OPENAI_API_KEY
-client = AzureOpenAI(
-    # https://learn.microsoft.com/azure/ai-services/openai/reference#rest-api-versioning
-    api_version="2023-07-01-preview",
-    # https://learn.microsoft.com/azure/cognitive-services/openai/how-to/create-resource?pivots=web-portal#create-a-resource
-    azure_endpoint="https://example-endpoint.openai.azure.com",
-)
+# Reads AZURE_OPENAI_API_KEY.
+client = OpenAI(provider=azure(endpoint="https://example-endpoint.openai.azure.com"))
 
 completion = client.chat.completions.create(
-    model="deployment-name",  # e.g. gpt-35-instant
-    messages=[
-        {
-            "role": "user",
-            "content": "How do I output all files in a directory using Python?",
-        },
-    ],
+    model="your-deployment-name",
+    messages=[{"role": "user", "content": "Say hello!"}],
 )
 print(completion.to_json())
 ```
 
-In addition to the options provided in the base `OpenAI` client, the following options are provided:
+You can also pass `api_key` to `azure(...)` or set the endpoint through `AZURE_OPENAI_ENDPOINT`. `model` is your Azure deployment name.
 
-- `azure_endpoint` (or the `AZURE_OPENAI_ENDPOINT` environment variable)
-- `azure_deployment`
-- `api_version` (or the `OPENAI_API_VERSION` environment variable)
-- `azure_ad_token` (or the `AZURE_OPENAI_AD_TOKEN` environment variable)
-- `azure_ad_token_provider`
+For Microsoft Entra ID authentication using `azure-identity` and a refreshable `token_provider`, see the [sync and async example](examples/azure_ad.py). For Realtime connections, see the [Realtime example](examples/realtime/azure_realtime.py).
 
-An example of using the client with Microsoft Entra ID (formerly known as Azure Active Directory) can be found [here](https://github.com/openai/openai-python/blob/main/examples/azure_ad.py).
+`AzureOpenAI` and `AsyncAzureOpenAI` are deprecated. Use `OpenAI(provider=azure(...))` or `AsyncOpenAI(provider=azure(...))` instead.
 
 ## Amazon Bedrock
 

@@ -26,6 +26,8 @@ class _ProviderRuntime:
     prepare_async_request: Callable[[httpx2.Request], Awaitable[None]] | None = None
     normalize_response: Callable[[httpx2.Response], httpx2.Response] | None = None
     normalize_async_response: Callable[[httpx2.Response], Awaitable[httpx2.Response]] | None = None
+    prepare_websocket_request: Callable[[httpx2.Request], None] | None = None
+    prepare_async_websocket_request: Callable[[httpx2.Request], Awaitable[None]] | None = None
 
 
 class _ProviderDefinition(Protocol):

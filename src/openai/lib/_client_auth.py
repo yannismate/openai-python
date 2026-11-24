@@ -83,6 +83,16 @@ def _set_request_api_key(
     }
 
 
+def _provider_websocket_request(
+    client: _sdk_client.OpenAI | _sdk_client.AsyncOpenAI, options: FinalRequestOptions
+) -> httpx2.Request:
+    custom_headers = options.headers if not isinstance(options.headers, NotGiven) else {}
+    request = httpx2.Request(options.method, options.url)
+    # WebSocket transports add their own Host and upgrade headers.
+    request.headers = httpx2.Headers(_merge_headers(client.default_headers, custom_headers))
+    return request
+
+
 def syncbase_url(self: _sdk_client.OpenAI) -> httpx2.URL:
     return self._base_url
 
@@ -375,10 +385,15 @@ def sync_validate_headers(self: _sdk_client.OpenAI, headers: Headers, custom_hea
 def sync_prepare_options(
     _owner: type[_sdk_client.OpenAI], /, self: _sdk_client.OpenAI, options: FinalRequestOptions
 ) -> FinalRequestOptions:
-    if options.url.startswith(("ws://", "wss://")) and (
-        self._provider_runtime is not None or self.workload_identity is not None
-    ):
-        raise _sdk_client.OpenAIError("This authentication method is not supported by WebSocket connections")
+    if options.url.startswith(("ws://", "wss://")):
+        runtime = self._provider_runtime
+        if self.workload_identity is not None or (runtime is not None and runtime.prepare_websocket_request is None):
+            raise _sdk_client.OpenAIError("This authentication method is not supported by WebSocket connections")
+        if runtime is not None and runtime.prepare_websocket_request is not None:
+            request = _provider_websocket_request(self, options)
+            runtime.prepare_websocket_request(request)
+            custom_headers = options.headers if not isinstance(options.headers, NotGiven) else {}
+            options.headers = {**custom_headers, **request.headers}
     if self._provider_runtime is not None:
         if self._provider_runtime.transform_request is not None:
             options = self._provider_runtime.transform_request(options)
@@ -844,10 +859,22 @@ def async_validate_headers(self: _sdk_client.AsyncOpenAI, headers: Headers, cust
 async def async_prepare_options(
     _owner: type[_sdk_client.AsyncOpenAI], /, self: _sdk_client.AsyncOpenAI, options: FinalRequestOptions
 ) -> FinalRequestOptions:
-    if options.url.startswith(("ws://", "wss://")) and (
-        self._provider_runtime is not None or self.workload_identity is not None
-    ):
-        raise _sdk_client.OpenAIError("This authentication method is not supported by WebSocket connections")
+    if options.url.startswith(("ws://", "wss://")):
+        runtime = self._provider_runtime
+        if self.workload_identity is not None or (
+            runtime is not None
+            and runtime.prepare_async_websocket_request is None
+            and runtime.prepare_websocket_request is None
+        ):
+            raise _sdk_client.OpenAIError("This authentication method is not supported by WebSocket connections")
+        if runtime is not None:
+            request = _provider_websocket_request(self, options)
+            if runtime.prepare_async_websocket_request is not None:
+                await runtime.prepare_async_websocket_request(request)
+            elif runtime.prepare_websocket_request is not None:
+                runtime.prepare_websocket_request(request)
+            custom_headers = options.headers if not isinstance(options.headers, NotGiven) else {}
+            options.headers = {**custom_headers, **request.headers}
     if self._provider_runtime is not None:
         if self._provider_runtime.transform_async_request is not None:
             options = await self._provider_runtime.transform_async_request(options)

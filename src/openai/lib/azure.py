@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import inspect
 from typing import Any, Union, Mapping, TypeVar, Callable, Awaitable, cast, overload
-from typing_extensions import Self, override
+from typing_extensions import Self, override, deprecated
 
 import httpx2
 
@@ -185,7 +185,10 @@ class BaseAzureClient(BaseClient[_HttpxClientT, _DefaultStreamT]):
         return super()._prepare_url(url)
 
 
+@deprecated("Use OpenAI(provider=azure(...)) from openai.providers instead.", category=None)
 class AzureOpenAI(BaseAzureClient[httpx2.Client, Stream[Any]], OpenAI):
+    """Deprecated versioned Azure client. Prefer OpenAI(provider=azure(...)) for Azure's v1 API."""
+
     @overload
     def __init__(
         self,
@@ -559,7 +562,10 @@ class AzureOpenAI(BaseAzureClient[httpx2.Client, Stream[Any]], OpenAI):
         return url, auth_headers
 
 
+@deprecated("Use AsyncOpenAI(provider=azure(...)) from openai.providers instead.", category=None)
 class AsyncAzureOpenAI(BaseAzureClient[httpx2.AsyncClient, AsyncStream[Any]], AsyncOpenAI):
+    """Deprecated versioned Azure client. Prefer AsyncOpenAI(provider=azure(...)) for Azure's v1 API."""
+
     @overload
     def __init__(
         self,
